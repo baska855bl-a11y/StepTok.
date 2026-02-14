@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StepTok Feed</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: black; font-family: 'Inter', sans-serif; }
+    .screen { display: none; height: 100vh; overflow: hidden; }
+    .active { display: block; }
+
+    /* VIDEO FEED */
+    #videoFeed { position: relative; width: 100%; height: 100%; touch-action: none; }
+    video { width: 100%; height: 100%; object-fit: cover; }
+
+    .video-info { position: absolute; bottom: 90px; left: 15px; color: white; }
+
+    .bottom-nav { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; background: #111; padding: 12px 0; font-size: 24px; color: white;}
+
+    .bottom-nav button { background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
+
+    /* LOGIN */
+    .login-container { display: flex; flex-direction: column; padding: 40px 20px; gap: 15px; color: white; }
+    .login-container input { padding: 10px; border: none; border-radius: 5px; font-size: 16px; }
+
+    .login-container button { padding: 10px; border: none; background: #ff0050; color: white; border-radius: 5px; font-size: 18px; cursor: pointer; }
+
+  </style>
+</head>
+<body>
+
+  <!-- FEED -->
+  <div id="feed" class="screen active">
+    <div id="videoFeed"></div>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="login" class="screen">
+    <div class="login-container">
+      <h2>Prihlásiť sa</h2>
+      <input type="email" id="loginEmail" placeholder="Email">
+      <input type="password" id="loginPass" placeholder="Heslo">
+      <button onclick="loginUser()">Prihlásiť sa</button>
+      <button onclick="showScreen('login')">Back</button>
+    </div>
+  </div>
+
+  <!-- SPODNÁ NAVIGÁCIA -->
+  <div class="bottom-nav">
+    <button onclick="showScreen('feed')">🏠</button>
+    <button onclick="showScreen('login')">🔑</button>
+  </div>
+
+  <script>
+    let currentUser = localStorage.getItem('user');
+    let videoList = JSON.parse(localStorage.getItem('videos')) || [];
+
+    const feed = document.getElementById('videoFeed');
+    let currentIndex = 0;
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function loginUser() {
+      const email = document.getElementById('loginEmail').value;
+      const pass = document.getElementById('loginPass').value;
+
+      if (email && pass) {
+        localStorage.setItem('user', email);
+        currentUser = email;
+        showScreen('feed');
+        loadFeed();
+      } else {
+        alert('Vyplň údaje');
+      }
+    }
+
+    function loadFeed() {
+      feed.innerHTML = '';
+      if (videoList.length === 0) {
+        feed.innerHTML = '<p style="color:white;text-align:center;margin-top:50%;">Žiadne videá</p>';
+        return;
+      }
+
+      const vidDiv = document.createElement('div');
+      const vid = document.createElement('video');
+      vid.src = videoList[currentIndex];
+      vid.autoplay = true;
+      vid.loop = true;
+      vid.muted = false;
+      vid.controls = false;
+
+      const info = document.createElement('div');
+      info.className = "video-info";
+      info.textContent = `Video ${currentIndex + 1}/${videoList.length}`;
+
+      vidDiv.appendChild(vid);
+      vidDiv.appendChild(info);
+      feed.appendChild(vidDiv);
+    }
+
+    let startY = 0;
+
+    feed.addEventListener('touchstart', e => startY = e.touches[0].clientY);
+    feed.addEventListener('touchend', e => {
+      let endY = e.changedTouches[0].clientY;
+      if (endY < startY - 50) nextVideo();
+      if (endY > startY + 50) prevVideo();
+    });
+
+    function nextVideo() {
+      if (currentIndex < videoList.length - 1) currentIndex++;
+      else currentIndex = 0;
+      loadFeed();
+    }
+
+    function prevVideo() {
+      if (currentIndex > 0) currentIndex--;
+      else currentIndex = videoList.length - 1;
+      loadFeed();
+    }
+
+    window.onload = () => {
+      if (!currentUser) showScreen('login');
+      else loadFeed();
+    };
+  </script>
+
+</body>
+</html>
